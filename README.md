@@ -84,9 +84,7 @@ Follow these steps in order. Each numbered folder in the repository corresponds 
 
 Create a free **Slack trial workspace** and configure the Slack app required by the MCP connector by following the instructions in:
 
-```
-1-1-admin-setup-slack/
-```
+[1-1-admin-setup-slack/](1-1-admin-setup-slack/Readme.md)
 
 This step provisions the Slack app, channels, and tokens the agent will use to read and post messages.
 
@@ -94,14 +92,12 @@ This step provisions the Slack app, channels, and tokens the agent will use to r
 
 Log in to Snowflake with a privileged role (e.g. `ACCOUNTADMIN`) and run:
 
-```
-1-setup-ai-environment.sql
-```
+[1-setup-ai-environment.sql](1-2-admin-setup-ai-dev-environment/1-setup-ai-environment.sql)
 
 This script provisions a dedicated demo user and grants it all roles, warehouses, and object-level privileges required to build the agent.
 
 > [!IMPORTANT]
-> Make sure to replace <slack-client-id>, <slack-client-secret> and <your-password> with your values.
+> Make sure to replace `slack-client-id`, `slack-client-secret` and `your-password` with your values.
 
 ### 3. Log In as the Demo User
 
@@ -119,9 +115,9 @@ https://github.com/michaelgorkow/snowflake-cortex-agents-software-sales-demo.git
 
 From the Workspace, execute all scripts in the following folders **in order**:
 
-1. `2-1-ai-dev-generate-data/` — generates synthetic customer credit consumption data and service tickets
-2. `2-2-ai-dev-setup-services/` — creates the Cortex Search Services, Semantic Views, custom skills, and MCP connectors
-3. `2-3-ai-dev-setup-agents/` — creates the main `SOFTWARE_SALES_DEMO_AGENT` and the competitive-intelligence sub-agent
+1. [2-1-ai-dev-generate-data/](2-1-ai-dev-generate-data/) — generates synthetic customer credit consumption data and service tickets
+2. [2-2-ai-dev-setup-services/](2-2-ai-dev-setup-services/) — creates the Cortex Search Services, Semantic Views, custom skills, and MCP connectors
+3. [2-3-ai-dev-setup-agents/](2-3-ai-dev-setup-agents/) — creates the main `SOFTWARE_SALES_DEMO_AGENT` and the competitive-intelligence sub-agent
 
 Once all scripts have completed successfully, open **Snowflake Intelligence**, select the `SOFTWARE_SALES_DEMO_AGENT`, and try the example use cases described above.
 
