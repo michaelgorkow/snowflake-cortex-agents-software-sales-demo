@@ -1,3 +1,14 @@
+-- ---------------------------------------------------------
+-- Create Service Tickets
+-- ---------------------------------------------------------
+-- This script creates the CUSTOMER_SERVICE schema in the
+-- SOFTWARE_SALES_DEMO_DB database and populates the
+-- SERVICE_TICKETS table with sample customer support tickets.
+-- The generated data is used as unstructured input for
+-- downstream AI-driven analysis in the demo (e.g., ticket
+-- classificationand summarization).
+-- ---------------------------------------------------------
+
 CREATE OR REPLACE SCHEMA SOFTWARE_SALES_DEMO_DB.CUSTOMER_SERVICE;
 
 CREATE OR REPLACE TABLE SOFTWARE_SALES_DEMO_DB.CUSTOMER_SERVICE.SERVICE_TICKETS (

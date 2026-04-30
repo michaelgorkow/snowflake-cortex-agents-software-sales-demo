@@ -1,3 +1,16 @@
+-- ---------------------------------------------------------
+-- Setup AI Development Environment
+-- ---------------------------------------------------------
+-- This script sets up the initial Snowflake environment for the demo.
+-- It creates the databases, schemas, warehouse, network/API integrations,
+-- role with required privileges, and a new user with all privileges
+-- required to create the entire demo setup.
+--
+-- NOTE: This script must be run with admin privileges (ACCOUNTADMIN)
+-- and should be executed as the VERY FIRST STEP to bootstrap the demo.
+-- Once the script finished, login with the newly created user.
+-- ---------------------------------------------------------
+
 USE ROLE ACCOUNTADMIN;
 
 -- ---------------------------------------------------------
@@ -110,7 +123,7 @@ CREATE USER IF NOT EXISTS SOFTWARE_SALES_DEMO_USER
     EMAIL                = 'demouser@snowflake.com'
     DEFAULT_ROLE         = SOFTWARE_SALES_DEMO_ROLE
     DEFAULT_WAREHOUSE    = SOFTWARE_SALES_DEMO_WH
-    MUST_CHANGE_PASSWORD = FALSE;
+    MUST_CHANGE_PASSWORD = TRUE;
 
 -- ---------------------------------------------------------
 -- Grant the Role

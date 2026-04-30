@@ -1,3 +1,20 @@
+-- ---------------------------------------------------------
+-- Competitive Intelligence Sub-Agent
+-- ---------------------------------------------------------
+-- This script creates the COMPETITIVE_INTELLIGENCE schema and
+-- provisions a Cortex sub-agent focused on analyzing news and
+-- social media content about Snowflake and its competitors.
+--
+-- It configures:
+--   * COMPETITIVE_INTELLIGENCE_AGENT - a Cortex Agent with a
+--     Web Search tool and a GIT-sourced skill
+--     (snowflake-competitor-news-social-media) loaded from the
+--     AGENT_SKILLS Git repository.
+--   * COMPETITIVE_INTELLIGENCE_AGENT_SERVER - an MCP server that
+--     exposes the sub-agent as a callable tool so the main demo
+--     agent can invoke it via CORTEX_AGENT_RUN.
+-- ---------------------------------------------------------
+
 CREATE OR REPLACE SCHEMA SOFTWARE_SALES_DEMO_DB.COMPETITIVE_INTELLIGENCE;
 
 CREATE OR REPLACE AGENT SOFTWARE_SALES_DEMO_DB.COMPETITIVE_INTELLIGENCE.COMPETITIVE_INTELLIGENCE_AGENT

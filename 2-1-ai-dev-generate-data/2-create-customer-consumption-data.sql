@@ -1,3 +1,22 @@
+-- ---------------------------------------------------------
+-- Create Customer Consumption Data
+-- ---------------------------------------------------------
+-- This script creates the CUSTOMER_CONSUMPTION_DATA schema
+-- in the SOFTWARE_SALES_DEMO_DB database and populates it with:
+--   * CUSTOMER_ACCOUNTS        - a dimension table of Snowflake
+--                                customer accounts (edition, region,
+--                                cloud provider, contract start).
+--   * DAILY_CREDIT_CONSUMPTION - a daily-grain fact table of
+--                                synthetic credit consumption per
+--                                account, service type and (for
+--                                COMPUTE) warehouse, covering the
+--                                trailing 365 days.
+--
+-- The generated data is structured numeric/dimensional data used
+-- by downstream demo assets (semantic views, Cortex Analyst)
+-- to analyze customer usage and spending trends.
+-- ---------------------------------------------------------
+
 CREATE OR REPLACE SCHEMA SOFTWARE_SALES_DEMO_DB.CUSTOMER_CONSUMPTION_DATA;
 
 -- Customer accounts dimension

@@ -1,6 +1,26 @@
-USE SCHEMA SOFTWARE_SALES_DEMO_DB.PUBLIC;
+-- ---------------------------------------------------------
+-- Main Agent - Software Sales Demo Agent
+-- ---------------------------------------------------------
+-- This script creates the primary Cortex Agent for the demo:
+-- SOFTWARE_SALES_DEMO_AGENT. The agent supports account
+-- management and sales decisions by combining:
+--   * Cortex Analyst over the CUSTOMER_CONSUMPTION semantic view
+--     (structured consumption/billing analytics).
+--   * Cortex Search services for customer name lookup and
+--     service-ticket retrieval.
+--   * Web Search and Code Execution tools.
+--   * A Git-sourced forecasting skill
+--     (snowflake-customer-consumption-forecast).
+--   * MCP servers for Slack integration and the
+--     COMPETITIVE_INTELLIGENCE sub-agent.
+--
+-- Orchestration instructions route customer-name questions
+-- through the customer-lookup tool and delegate competitive/
+-- news/social-media queries to the competitive intelligence
+-- sub-agent.
+-- ---------------------------------------------------------
 
-DESCRIBE AGENT SOFTWARE_SALES_DEMO_DB.PUBLIC.SOFTWARE_SALES_DEMO_AGENT;
+USE SCHEMA SOFTWARE_SALES_DEMO_DB.PUBLIC;
 
 CREATE OR REPLACE AGENT SOFTWARE_SALES_DEMO_DB.PUBLIC.SOFTWARE_SALES_DEMO_AGENT
   COMMENT = 'This agent analyzes customer consumption data, service tickets, and competitive intelligence for a software sales team. It combines Snowflake analytics (via semantic model), customer lookup, service ticket search, web search, code execution, consumption forecasting, Slack integration, and a competitive intelligence sub-agent to support account management and sales decisions.'

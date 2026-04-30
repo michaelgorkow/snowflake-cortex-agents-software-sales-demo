@@ -1,3 +1,20 @@
+-- ---------------------------------------------------------
+-- Semantic View - Customer Consumption
+-- ---------------------------------------------------------
+-- This script creates the CUSTOMER_CONSUMPTION semantic view,
+-- which exposes a business-friendly model over the
+-- CUSTOMER_ACCOUNTS and DAILY_CREDIT_CONSUMPTION tables.
+-- It defines tables, relationships, facts (CREDITS_USED), and
+-- dimensions (account, customer, region, cloud provider, edition,
+-- service type, warehouse, usage date), and wires the
+-- CUSTOMER_NAME dimension to the CUSTOMER_SEARCH_NAME Cortex
+-- Search Service for fuzzy name resolution.
+--
+-- This semantic view is used by Cortex Analyst in the demo to
+-- translate natural-language questions into accurate SQL over
+-- customer consumption data.
+-- ---------------------------------------------------------
+
 create or replace semantic view SOFTWARE_SALES_DEMO_DB.CUSTOMER_CONSUMPTION_DATA.CUSTOMER_CONSUMPTION
 	tables (
 		SOFTWARE_SALES_DEMO_DB.CUSTOMER_CONSUMPTION_DATA.CUSTOMER_ACCOUNTS primary key (ACCOUNT_ID) comment='The table contains records of customer accounts associated with software subscriptions. Each record represents a single account and includes details about the customer, their geographic region, cloud provider, software edition, and contract start date.',
