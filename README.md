@@ -74,6 +74,12 @@ The `SOFTWARE_SALES_DEMO_AGENT` uses the following Snowflake features:
 | Communication | [MCP Connector](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents-mcp-connectors) | Search and send Slack messages |
 | Analytical questions over unstructured data | [Agentic Search](https://docs.snowflake.com/en/LIMITEDACCESS/agentic-search) | e.g. "how many service tickets per category?" using `AI_CLASSIFY` |
 
+### Agent Architecture
+
+[![Agent Architecture](images/agent-architecture-1.jpg)](https://michaelgorkow.github.io/snowflake-cortex-agents-software-sales-demo/images/agent-architecture.html)
+
+> Click the image for the interactive version.
+
 ---
 
 ## Demo Setup
