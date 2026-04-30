@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SOFTWARE_SALES_DEMO_AGENT — Architecture</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #1b2660 0%, transparent 60%),
+      radial-gradient(1000px 500px at 110% 10%, #1e3a8a 0%, transparent 55%),
+      linear-gradient(180deg, #0b1020 0%, #111833 100%);
+    color: #e6ecff;
+  }
+
+  header {
+    position: relative; z-index: 5;
+    padding: 18px 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: space-between;
+    backdrop-filter: blur(8px);
+  }
+  .title-gradient {
+    background: linear-gradient(90deg, #e6ecff 0%, #7dd3fc 60%, #a855f7 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Stage + zoomable content */
+  #stage {
+    position: absolute;
+    top: 76px; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+    cursor: grab;
+  }
+  #stage.grabbing { cursor: grabbing; }
+  #world {
+    position: absolute;
+    top: 0; left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+  #edges {
+    position: absolute; top: 0; left: 0;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  /* Card styles */
+  .node-card {
+    position: absolute;
+    width: 420px;
+    height: 96px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 14px;
+    padding: 12px 14px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset;
+    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    border: 1px solid rgba(255,255,255,0.12);
+    user-select: none;
+    cursor: pointer;
+  }
+  .node-card:hover {
+    box-shadow: 0 16px 44px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.3) inset;
+    border-color: rgba(255,255,255,0.35);
+  }
+  .node-card .row { display:flex; align-items:center; gap: 10px; }
+  .node-card .pill {
+    display:inline-flex; align-items:center;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 999px;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .node-card .title { font-size: 15px; font-weight: 700; line-height: 1.25; word-break: break-word; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .node-card .subtitle { font-size: 13px; opacity: 0.9; margin-top: 6px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+  .node-card .icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(255,255,255,0.18);
+    flex-shrink: 0;
+  }
+
+  /* Type gradients */
+  .card-agent        { background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); }
+  .card-subagent     { background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%); }
+  .card-tool-analyst { background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); }
+  .card-tool-search  { background: linear-gradient(135deg, #047857 0%, #10b981 100%); }
+  .card-tool-web     { background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); }
+  .card-tool-code    { background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%); }
+  .card-skill        { background: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%); }
+  .card-mcp          { background: linear-gradient(135deg, #ea580c 0%, #fb923c 100%); }
+  .card-resource     { background: linear-gradient(135deg, #334155 0%, #475569 100%); }
+
+  .card-agent .title, .card-subagent .title { font-size: 14px; }
+
+  /* Panels */
+  .legend, .info {
+    position: absolute; z-index: 5;
+    background: rgba(17, 24, 51, 0.85);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 14px 16px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  }
+  .legend { top: 96px; right: 20px; width: 240px; }
+  .info   { bottom: 20px; left: 20px; max-width: 380px; font-size: 12.5px; color: #cbd5e1; line-height: 1.5; }
+  .legend h3 {
+    margin: 0 0 10px 0; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #94a3b8; font-weight: 700;
+  }
+  .legend-item { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 12.5px; color: #e6ecff; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 4px; box-shadow: 0 0 0 2px rgba(255,255,255,0.06); }
+
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 30;
+    background: rgba(12, 18, 40, 0.97); color: #e6ecff;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 10px 12px;
+    font-size: 12.5px; max-width: 320px; line-height: 1.45;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+    opacity: 0; transform: translate(-50%, -110%); transition: opacity 120ms ease;
+  }
+  .tooltip strong { display: block; font-size: 13px; margin-bottom: 4px; color: #c7d2fe; }
+  .tooltip em { display: block; color: #94a3b8; font-style: normal; font-size: 11.5px; margin-top: 4px; }
+
+  .controls {
+    position: absolute; z-index: 5; top: 96px; left: 20px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .ctl-btn {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(17, 24, 51, 0.85);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #e6ecff; font-size: 18px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; backdrop-filter: blur(8px);
+    transition: background 160ms ease, border-color 160ms ease;
+  }
+  .ctl-btn:hover { background: rgba(30, 41, 76, 0.95); border-color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1 class="text-xl font-bold title-gradient m-0">SOFTWARE_SALES_DEMO_AGENT — Architecture</h1>
+    <p class="text-sm text-slate-400 m-0 mt-1">Cortex Agent orchestration across tools, skills, MCP servers, and a delegated sub-agent.</p>
+  </div>
+  <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-200 text-xs font-medium">
+    <span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_10px_#38bdf8]"></span>
+    Snowflake Cortex Agents
+  </div>
+</header>
+
+<div class="controls">
+  <button class="ctl-btn" id="zoomIn" title="Zoom in">+</button>
+  <button class="ctl-btn" id="zoomOut" title="Zoom out">−</button>
+  <button class="ctl-btn" id="zoomFit" title="Fit to screen" style="font-size:13px;">Fit</button>
+</div>
+
+<div class="legend">
+  <h3>Legend</h3>
+  <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6)"></span> Main Agent</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#4338ca,#6366f1)"></span> Sub-Agent</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#0d9488,#14b8a6)"></span> Cortex Analyst Tool</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#047857,#10b981)"></span> Cortex Search Tool</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#d97706,#f59e0b)"></span> Web Search Tool</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#e11d48,#f43f5e)"></span> Code Execution Tool</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#7e22ce,#a855f7)"></span> Skill (Git)</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#ea580c,#fb923c)"></span> MCP Server</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#334155,#475569)"></span> Resource / Data</div>
+</div>
+
+<div class="info" style="display:none">
+  <b class="text-white">Tip:</b> Drag the background to pan, scroll to zoom. Hover cards for details.
+  The main agent delegates competitive/news questions to the
+  <b class="text-white">COMPETITIVE_INTELLIGENCE_AGENT</b> via an MCP server (dashed purple edge).
+</div>
+
+<div id="stage">
+  <div id="world">
+    <svg id="edges" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="rgba(148,163,184,0.85)"/>
+        </marker>
+        <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#a855f7"/>
+        </marker>
+      </defs>
+    </svg>
+    <div id="nodes"></div>
+  </div>
+</div>
+
+<div id="tooltip" class="tooltip"></div>
+
+<script>
+  // ---- Icons ----
+  const icons = {
+    agent: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 16h.01"/><path d="M16 16h.01"/></svg>`,
+    subagent: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>`,
+    analyst: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>`,
+    search: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>`,
+    web: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>`,
+    code: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+    skill: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15 8l6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1z"/></svg>`,
+    mcp: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20M6 15h2M12 15h2"/></svg>`,
+    resource: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>`,
+  };
+
+  const typeMeta = {
+    'agent':        { cls: 'card-agent',        label: 'MAIN AGENT',      icon: icons.agent },
+    'subagent':     { cls: 'card-subagent',     label: 'SUB-AGENT',       icon: icons.subagent },
+    'tool-analyst': { cls: 'card-tool-analyst', label: 'CORTEX ANALYST',  icon: icons.analyst },
+    'tool-search':  { cls: 'card-tool-search',  label: 'CORTEX SEARCH',   icon: icons.search },
+    'tool-web':     { cls: 'card-tool-web',     label: 'WEB SEARCH',      icon: icons.web },
+    'tool-code':    { cls: 'card-tool-code',    label: 'CODE EXECUTION',  icon: icons.code },
+    'skill':        { cls: 'card-skill',        label: 'SKILL (GIT)',     icon: icons.skill },
+    'mcp':          { cls: 'card-mcp',          label: 'MCP SERVER',      icon: icons.mcp },
+    'resource':     { cls: 'card-resource',     label: 'RESOURCE',        icon: icons.resource },
+  };
+
+  const nodesRaw = [
+    { id: 'mainAgent', label: 'SOFTWARE_SALES_DEMO_AGENT', type: 'agent',
+      desc: 'Primary Cortex Agent orchestrating sales support workflows.', sub: 'Model: claude-opus-4-7' },
+    { id: 'subAgent', label: 'COMPETITIVE_INTELLIGENCE_AGENT', type: 'subagent',
+      desc: 'Sub-agent focused on news and social media intelligence.', sub: 'Model: claude-sonnet-4-6' },
+    { id: 'toolAnalyst', label: 'customer-consumption-data', type: 'tool-analyst',
+      desc: 'Cortex Analyst (text-to-SQL) over the customer consumption semantic view.', sub: 'cortex_analyst_text_to_sql' },
+    { id: 'toolLookup', label: 'customer-lookup', type: 'tool-search',
+      desc: 'Cortex Search service for resolving customer names.', sub: 'cortex_search' },
+    { id: 'toolTickets', label: 'customer-service-tickets', type: 'tool-search',
+      desc: 'Cortex Search over customer service ticket descriptions.', sub: 'cortex_search' },
+    { id: 'toolWeb', label: 'Web Search', type: 'tool-web',
+      desc: 'Snowflake Web Search tool.', sub: 'web_search · max_results = 10' },
+    { id: 'toolCode', label: 'code_execution', type: 'tool-code',
+      desc: 'Code Execution Tool — runs Python (e.g. Prophet forecasts).', sub: 'code_execution' },
+    { id: 'skillForecast', label: 'snowflake-customer-consumption-forecast', type: 'skill',
+      desc: 'Git-sourced skill that forecasts customer credit consumption via Prophet.', sub: 'GIT_INTEGRATION · AGENT_SKILLS' },
+    { id: 'skillNews', label: 'snowflake-competitor-news-social-media', type: 'skill',
+      desc: 'Git-sourced skill for competitor news & social posts.', sub: 'GIT_INTEGRATION · AGENT_SKILLS' },
+    { id: 'mcpSlack', label: 'SLACK_MCP_SERVER', type: 'mcp',
+      desc: 'MCP connector to Slack — reads channels and posts messages.', sub: 'SOFTWARE_SALES_DEMO_SLACK_MCP_SERVER' },
+    { id: 'mcpCI', label: 'COMPETITIVE_INTELLIGENCE_AGENT_SERVER', type: 'mcp',
+      desc: 'MCP server exposing the sub-agent as a callable tool.', sub: 'CORTEX_AGENT_RUN → sub-agent' },
+    { id: 'subToolWeb', label: 'Web Search', type: 'tool-web',
+      desc: 'Web Search tool available to the sub-agent.', sub: 'web_search · max_results = 10' },
+    { id: 'resSemantic', label: 'CUSTOMER_CONSUMPTION', type: 'resource',
+      desc: 'Semantic view exposing consumption/billing facts & dimensions.', sub: 'Semantic View' },
+    { id: 'resSearchName', label: 'CUSTOMER_SEARCH_NAME', type: 'resource',
+      desc: 'Cortex Search service indexing customer names.', sub: 'Cortex Search Service' },
+    { id: 'resSearchTickets', label: 'SERVICE_TICKET_SEARCH', type: 'resource',
+      desc: 'Cortex Search service indexing service tickets.', sub: 'Cortex Search Service' },
+    { id: 'resPypi', label: 'PYPI_SHARED_REPOSITORY', type: 'resource',
+      desc: 'Artifact repository used by Code Execution for Python packages.', sub: 'SNOWFLAKE.SNOWPARK' },
+    { id: 'resEAI', label: 'EXTERNAL_ACCESS_INTEGRATION', type: 'resource',
+      desc: 'Enables outbound network calls from Code Execution.', sub: 'External Access Integration' },
+    { id: 'resSlack', label: 'Slack Workspace', type: 'resource',
+      desc: 'External Slack workspace reached via the MCP connector.', sub: 'OAuth-authenticated' },
+  ];
+
+  const edgesRaw = [
+    { source: 'mainAgent', target: 'toolAnalyst' },
+    { source: 'mainAgent', target: 'toolLookup' },
+    { source: 'mainAgent', target: 'toolTickets' },
+    { source: 'mainAgent', target: 'toolWeb' },
+    { source: 'mainAgent', target: 'toolCode' },
+    { source: 'mainAgent', target: 'skillForecast' },
+    { source: 'mainAgent', target: 'mcpSlack' },
+    { source: 'mainAgent', target: 'mcpCI', cls: 'delegation' },
+    { source: 'mcpCI', target: 'subAgent', cls: 'delegation' },
+    { source: 'subAgent', target: 'subToolWeb' },
+    { source: 'subAgent', target: 'skillNews' },
+    { source: 'toolAnalyst', target: 'resSemantic' },
+    { source: 'toolLookup', target: 'resSearchName' },
+    { source: 'toolTickets', target: 'resSearchTickets' },
+    { source: 'toolCode', target: 'resPypi' },
+    { source: 'toolCode', target: 'resEAI' },
+    { source: 'mcpSlack', target: 'resSlack' },
+  ];
+
+  function buildCard(n) {
+    const meta = typeMeta[n.type];
+    const el = document.createElement('div');
+    el.className = `node-card ${meta.cls}`;
+    el.setAttribute('data-id', n.id);
+    el.innerHTML = `
+      <div class="row">
+        <div class="icon">${meta.icon}</div>
+        <div style="flex:1; min-width:0;">
+          <span class="pill">${meta.label}</span>
+          <div class="title" style="margin-top:6px;">${n.label}</div>
+        </div>
+      </div>
+      ${n.sub ? `<div class="subtitle">${n.sub}</div>` : ''}
+    `;
+    return el;
+  }
+
+  // ---- Render cards offscreen to measure, then lay out with dagre ----
+  const nodesContainer = document.getElementById('nodes');
+  const svg = document.getElementById('edges');
+  const world = document.getElementById('world');
+
+  const cardEls = {};
+  nodesRaw.forEach(n => {
+    const el = buildCard(n);
+    el.style.visibility = 'hidden';
+    el.style.left = '0px'; el.style.top = '0px';
+    nodesContainer.appendChild(el);
+    cardEls[n.id] = el;
+  });
+
+  // Force layout measurement
+  function runLayout() {
+    const g = new dagre.graphlib.Graph();
+    g.setGraph({ rankdir: 'LR', nodesep: 32, ranksep: 130, marginx: 30, marginy: 30 });
+    g.setDefaultEdgeLabel(() => ({}));
+
+    nodesRaw.forEach(n => {
+      const rect = cardEls[n.id].getBoundingClientRect();
+      g.setNode(n.id, { width: rect.width, height: rect.height });
+    });
+    edgesRaw.forEach(e => {
+      g.setEdge(e.source, e.target, { cls: e.cls || '' });
+    });
+
+    dagre.layout(g);
+
+    const { width: gw, height: gh } = g.graph();
+    world.style.width = gw + 'px';
+    world.style.height = gh + 'px';
+    svg.setAttribute('width', gw);
+    svg.setAttribute('height', gh);
+    svg.style.width = gw + 'px';
+    svg.style.height = gh + 'px';
+
+    g.nodes().forEach(id => {
+      const n = g.node(id);
+      const el = cardEls[id];
+      el.style.left = (n.x - n.width / 2) + 'px';
+      el.style.top = (n.y - n.height / 2) + 'px';
+      el.style.visibility = 'visible';
+    });
+
+    // Clear previous paths
+    svg.querySelectorAll('path.edge').forEach(p => p.remove());
+
+    g.edges().forEach(e => {
+      const edge = g.edge(e);
+      const pts = edge.points;
+      const d = bezierPath(pts);
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('class', 'edge');
+      path.setAttribute('fill', 'none');
+      const isDel = edge.cls === 'delegation';
+      path.setAttribute('stroke', isDel ? '#a855f7' : 'rgba(148,163,184,0.6)');
+      path.setAttribute('stroke-width', isDel ? 2.5 : 2);
+      if (isDel) path.setAttribute('stroke-dasharray', '8 5');
+      path.setAttribute('marker-end', isDel ? 'url(#arrow-purple)' : 'url(#arrow)');
+      svg.appendChild(path);
+    });
+
+    return { gw, gh };
+  }
+
+  function bezierPath(points) {
+    if (points.length < 2) return '';
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length - 1; i++) {
+      const midX = (points[i].x + points[i + 1].x) / 2;
+      const midY = (points[i].y + points[i + 1].y) / 2;
+      d += ` Q ${points[i].x} ${points[i].y}, ${midX} ${midY}`;
+    }
+    const last = points[points.length - 1];
+    d += ` T ${last.x} ${last.y}`;
+    return d;
+  }
+
+  // Wait for fonts/CSS to apply, then layout
+  let dims;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      dims = runLayout();
+      fitToScreen();
+    });
+  });
+
+  // ---- Pan/Zoom ----
+  const stage = document.getElementById('stage');
+  let tx = 0, ty = 0, scale = 1;
+  function applyTransform() {
+    world.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+  function fitToScreen() {
+    if (!dims) return;
+    const sw = stage.clientWidth;
+    const sh = stage.clientHeight;
+    const padding = 60;
+    const s = Math.min((sw - padding * 2) / dims.gw, (sh - padding * 2) / dims.gh, 1);
+    scale = s;
+    tx = (sw - dims.gw * s) / 2;
+    ty = (sh - dims.gh * s) / 2;
+    applyTransform();
+  }
+
+  // Drag to pan
+  let isDragging = false;
+  let dragStart = { x: 0, y: 0, tx: 0, ty: 0 };
+  stage.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.node-card')) return;
+    isDragging = true;
+    stage.classList.add('grabbing');
+    dragStart = { x: e.clientX, y: e.clientY, tx, ty };
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    tx = dragStart.tx + (e.clientX - dragStart.x);
+    ty = dragStart.ty + (e.clientY - dragStart.y);
+    applyTransform();
+  });
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+    stage.classList.remove('grabbing');
+  });
+
+  // Wheel to zoom (around cursor)
+  stage.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = stage.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    const delta = -e.deltaY * 0.0015;
+    const newScale = Math.min(3, Math.max(0.25, scale * (1 + delta)));
+    // keep cursor-anchored
+    const k = newScale / scale;
+    tx = cx - (cx - tx) * k;
+    ty = cy - (cy - ty) * k;
+    scale = newScale;
+    applyTransform();
+  }, { passive: false });
+
+  document.getElementById('zoomIn').onclick = () => { scale = Math.min(3, scale * 1.2); applyTransform(); };
+  document.getElementById('zoomOut').onclick = () => { scale = Math.max(0.25, scale / 1.2); applyTransform(); };
+  document.getElementById('zoomFit').onclick = () => fitToScreen();
+
+  window.addEventListener('resize', () => fitToScreen());
+
+  // ---- Tooltip ----
+  const tooltip = document.getElementById('tooltip');
+  nodesContainer.addEventListener('mouseover', (e) => {
+    const card = e.target.closest('.node-card');
+    if (!card) return;
+    const n = nodesRaw.find(x => x.id === card.dataset.id);
+    if (!n) return;
+    tooltip.innerHTML = `<strong>${n.label}</strong>${n.desc || ''}<em>${n.sub || ''}</em>`;
+    tooltip.style.opacity = 1;
+  });
+  nodesContainer.addEventListener('mouseout', (e) => {
+    if (!e.target.closest('.node-card')) return;
+    tooltip.style.opacity = 0;
+  });
+  window.addEventListener('mousemove', (e) => {
+    tooltip.style.left = e.clientX + 'px';
+    tooltip.style.top = e.clientY + 'px';
+  });
+</script>
+</body>
+</html>
